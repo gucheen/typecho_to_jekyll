@@ -39,7 +39,7 @@ async.parallel([
                 var text = r.text;
                 var tags = [];
                 var cat = null;
-                var date = moment.unix(r.created).format("YYYY-MM-DD HH:mm:ss");
+                var date = moment.unix(r.created).format("YYYY-MM-DD");
 
                 var oldUrl = null;
 
@@ -64,12 +64,13 @@ async.parallel([
                         fs.mkdirSync("./_post");
                     }
 
-                    var filename = "./_post/" + slug + ".md";
+                    var filename = "./_post/" + date + '-' + slug + ".md";
                     if(fs.existsSync(filename)){
                         fs.unlinkSync(filename);
                     }
+                    fs.appendFileSync(filename, "---\n");
+                    fs.appendFileSync(filename, "layout: post\n");
                     fs.appendFileSync(filename, "title: " + title + "\n");
-                    fs.appendFileSync(filename, "date: " + date + "\n");
                     if(cat != null){
                         fs.appendFileSync(filename, "categories: " + cat + "\n");
                         oldUrl = getUrl(cat,slug);
@@ -77,14 +78,17 @@ async.parallel([
                     }
                     if(tags.length > 0){
                         if(tags.length > 1){
-                            fs.appendFileSync(filename, "tags: [" + tags.toString() + "]\n");
+                            fs.appendFileSync(filename, "tags: " + tags.toString().replace(',',' ') + "\n");
                         }else{
                             fs.appendFileSync(filename, "tags: " + tags.toString() + "\n");
                         }
                     }
-                    fs.appendFileSync(filename, "thread_key: " + r.cid + "\n");
                     fs.appendFileSync(filename, "---\n\n");
-                    fs.appendFileSync(filename, toMarkdown(text));
+                    var r = /```(\w+)/g;
+                    var r2 = /```(\s|$)/g;
+                    var _text = text.replace(r,'{% highlight $1 %}');
+                    var newText = _text.replace(r2,'{% endhighlight %}')
+                    fs.appendFileSync(filename, toMarkdown(newText));
                     rs++;
 
                     if(oldUrl != null){
